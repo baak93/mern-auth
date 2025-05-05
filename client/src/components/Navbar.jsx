@@ -2,11 +2,25 @@ import React, { useContext } from "react";
 import { assets } from "../assets/assets";
 import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
+import { toast } from "react-toastify";
+import axios from "axios";
 
 const Navbar = () => {
   const navigate = useNavigate();
   const { userData, backendUrl, setUserData, setIsLoggedin } =
     useContext(AppContext);
+
+  const logout = async () => {
+    try {
+      axios.defaults.withCredentials = true;
+      const { data } = await axios.post(backendUrl + "/api/auth/logout");
+      data.success && setIsLoggedin(false);
+      data.success && setUserData(false);
+      navigate("/");
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
 
   return (
     <div className="w-full flex justify-between items-center p-4 sm:p-6 sm:px-24 absolute top-0">
@@ -23,7 +37,10 @@ const Navbar = () => {
                 </li>
               )}
 
-              <li className="py-1 px-2 hover:bg-gray-200 cursor-pointer pr-10">
+              <li
+                onClick={logout}
+                className="py-1 px-2 hover:bg-gray-200 cursor-pointer pr-10"
+              >
                 Logout
               </li>
             </ul>
