@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { assets } from "../assets/assets";
 import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
@@ -9,6 +9,20 @@ const Navbar = () => {
   const navigate = useNavigate();
   const { userData, backendUrl, setUserData, setIsLoggedin } =
     useContext(AppContext);
+
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  useEffect(() => {
+    const checkTouch = () => {
+      setIsTouchDevice(
+        "ontouchstart" in window || navigator.maxTouchPoints > 0
+      );
+    };
+    checkTouch();
+    window.addEventListener("resize", checkTouch);
+    return () => window.removeEventListener("resize", checkTouch);
+  }, []);
 
   const sendVerificationOtp = async () => {
     try {
@@ -32,9 +46,11 @@ const Navbar = () => {
     try {
       axios.defaults.withCredentials = true;
       const { data } = await axios.post(backendUrl + "/api/auth/logout");
-      data.success && setIsLoggedin(false);
-      data.success && setUserData(false);
-      navigate("/");
+      if (data.success) {
+        setIsLoggedin(false);
+        setUserData(false);
+        navigate("/");
+      }
     } catch (error) {
       toast.error(error.message);
     }
@@ -42,12 +58,30 @@ const Navbar = () => {
 
   return (
     <div className="w-full flex justify-between items-center p-4 sm:p-6 sm:px-24 absolute top-0">
-      <img src={assets.logo} alt="" className="w-28 sm:w-32" />
+      <img src={assets.logo} alt="logo" className="w-28 sm:w-32" />
 
       {userData ? (
-        <div className="w-8 h-8 flex justify-center items-center rounded-full bg-black text-white relative group">
+        <div
+          className="w-8 h-8 flex justify-center items-center rounded-full bg-black text-white relative group cursor-pointer"
+          onClick={() => {
+            if (isTouchDevice) setShowDropdown((prev) => !prev);
+          }}
+        >
           {userData.name[0].toUpperCase()}
-          <div className="absolute hidden group-hover:block top-0 right-0 z-10 text-black rounded pt-10">
+
+          {/* Dropdown sempre com hover, e com click se touch */}
+          <div
+            className={`
+              absolute z-10 top-0 right-0 pt-10 text-black rounded
+              ${
+                isTouchDevice
+                  ? showDropdown
+                    ? "block"
+                    : "hidden"
+                  : "group-hover:block hidden"
+              }
+            `}
+          >
             <ul className="list-none m-0 p-2 bg-gray-100 text-sm">
               {!userData.isAccountVerified && (
                 <li
@@ -57,7 +91,6 @@ const Navbar = () => {
                   Verify Email
                 </li>
               )}
-
               <li
                 onClick={logout}
                 className="py-1 px-2 hover:bg-gray-200 cursor-pointer pr-10"
